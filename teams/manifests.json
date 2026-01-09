@@ -1,0 +1,46 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.22/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.22",
+  "version": "1.0.0",
+  "id": "d67b4f3f-9792-4f4f-8fa6-ebc188d05eca",
+  "developer": {
+    "name": "Your Company",
+    "websiteUrl": "https://example.com",
+    "privacyUrl": "https://example.com/privacy",
+    "termsOfUseUrl": "https://example.com/terms"
+  },
+  "name": {
+    "short": "TaskManagement",
+    "full": "Task Management WebPart"
+  },
+  "description": {
+    "short": "TaskManagement WebPart",
+    "full": "This Teams app includes your TaskManagement SPFx WebPart"
+  },
+  "icons": {
+    "color": "d67b4f3f-9792-4f4f-8fa6-ebc188d05eca_color.png",
+    "outline": "d67b4f3f-9792-4f4f-8fa6-ebc188d05eca_outline.png"
+  },
+  "accentColor": "#0078D7",
+
+  "configurableTabs": [
+    {
+      "configurationUrl": "https://elevix.sharepoint.com/sites/Trainingportal/SitePages/TaskManagement.aspx",
+      "canUpdateConfiguration": true,
+      "scopes": ["groupChat"]
+    }
+  ],
+
+  "staticTabs": [
+    {
+      "entityId": "taskmanagement-webpart",
+      "name": "Task Management",
+      "contentUrl": "https://elevix.sharepoint.com/sites/Trainingportal/SitePages/TaskManagement.aspx",
+      "websiteUrl": "https://elevix.sharepoint.com/sites/Trainingportal/SitePages/TaskManagement.aspx",
+      "scopes": ["personal"]
+    }
+  ],
+
+  "permissions": ["identity", "messageTeamMembers"],
+  "validDomains": ["elevix.sharepoint.com"]
+}

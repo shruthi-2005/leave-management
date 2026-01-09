@@ -1,0 +1,17 @@
+#SuiteNavWrapper,
+#spCommandBar,
+#CommentsWrapper,
+#spSiteHeader,
+#spLeftNav,
+#sp-appBar {
+    display: none !important;
+}
+ 
+.headerRow-45,
+.f_c_6b55bba6,
+.go_aa_9f38462c,
+.webPartContainer,
+.mainHeader-121,
+.ms-CommandBar {
+    display: none !important;
+}

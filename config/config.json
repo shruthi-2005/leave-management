@@ -1,0 +1,55 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/config.2.0.schema.json",
+  "version": "2.0",
+  "bundles": {
+    "hello-counter-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/helloCounter/HelloCounterWebPart.js",
+          "manifest": "./src/webparts/helloCounter/HelloCounterWebPart.manifest.json"
+        }
+      ]
+    },
+    "leave-requests-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/leaveRequests/LeaveRequestsWebPart.js",
+          "manifest": "./src/webparts/leaveRequests/LeaveRequestsWebPart.manifest.json"
+        }
+      ]
+    },
+    "trip-share-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/tripShare/TripShareWebPart.js",
+          "manifest": "./src/webparts/tripShare/TripShareWebPart.manifest.json"
+        }
+      ]
+    },
+    "dynamic-form-approval-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/dynamicFormApproval/DynamicFormApprovalWebPart.js",
+          "manifest": "./src/webparts/dynamicFormApproval/DynamicFormApprovalWebPart.manifest.json"
+        }
+      ]
+    },
+    "task-management-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/taskManagement/TaskManagementWebPart.js",
+          "manifest": "./src/webparts/taskManagement/TaskManagementWebPart.manifest.json"
+        }
+      ]
+    }
+  },
+  "externals": {},
+  "localizedResources": {
+    "HelloCounterWebPartStrings": "lib/webparts/helloCounter/loc/{locale}.js",
+    "LeaveRequestsWebPartStrings": "lib/webparts/leaveRequests/loc/{locale}.js",
+    "ControlStrings": "node_modules/@pnp/spfx-controls-react/lib/loc/{locale}.js",
+    "TripShareWebPartStrings": "lib/webparts/tripShare/loc/{locale}.js",
+    "DynamicFormApprovalWebPartStrings": "lib/webparts/dynamicFormApproval/loc/{locale}.js",
+    "TaskManagementWebPartStrings": "lib/webparts/taskManagement/loc/{locale}.js"
+  }
+}

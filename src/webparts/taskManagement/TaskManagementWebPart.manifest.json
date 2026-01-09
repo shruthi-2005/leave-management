@@ -1,0 +1,26 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx/client-side-web-part-manifest.schema.json",
+  "id": "d67b4f3f-9792-4f4f-8fa6-ebc188d05eca",
+  "alias": "TaskManagementWebPart",
+  "componentType": "WebPart",
+
+  
+  "version": "*",
+  "manifestVersion": 2,
+
+  
+  "requiresCustomScript": false,
+  "supportedHosts": ["SharePointWebPart", "TeamsPersonalApp", "TeamsTab", "SharePointFullPage"],
+  "supportsThemeVariants": true,
+
+  "preconfiguredEntries": [{
+    "groupId": "5c03119e-3074-46fd-976b-c60198311f70", 
+    "group": { "default": "Advanced" },
+    "title": { "default": "TaskManagement" },
+    "description": { "default": "TaskManagement description" },
+    "officeFabricIconFontName": "Page",
+    "properties": {
+      "description": "TaskManagement"
+    }
+  }]
+}

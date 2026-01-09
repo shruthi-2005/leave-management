@@ -1,0 +1,1 @@
+export type Screen = 'dashboard' | 'dynamicForm' | 'mySubmissions' | 'myApprovals' | 'applyForm';
