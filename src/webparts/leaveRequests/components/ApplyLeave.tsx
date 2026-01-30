@@ -16,12 +16,14 @@ export interface IApplyLeaveProps {
     Status: string;
     Reason: string;
     Manager: { Email?: string; Title?: string };
+
   };
   onBack: () => void;
   spHttpClient: SPHttpClient;
   siteUrl: string;
   onViewChange: (view: ViewType) => void;
   viewType: ViewType;
+  sourceView:ViewType;
   showCancelButton?: boolean;
   showManagerActions?: boolean;
 }
@@ -42,18 +44,31 @@ const ApplyLeave: React.FC<IApplyLeaveProps> = ({
   item,
   onBack,
   spHttpClient,
+  context,
   viewType,
+  sourceView,
   onViewChange
 }) => {
 
   const [showDialog, setShowDialog] = useState(false);
   const [dialogMessage, setDialogMessage] = useState('');
 
-  // 🔹 Comment & History
+  
   const [comments, setComments] = useState('');
   const [commentsHistory, setCommentsHistory] = useState<string[]>([]);
   const [commentError, setCommentError] = useState('');
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const itemId = params.get("itemId");
+
+    if (itemId) {
+      console.log("Opened from mail, Item ID:", itemId);
+
+     
+      onViewChange(ViewType.myApproval);
+    }
+  }, []);
   // ✅ Load comments history for this leave from localStorage
   useEffect(() => {
     const stored = localStorage.getItem('leaveComments');
@@ -167,12 +182,25 @@ const ApplyLeave: React.FC<IApplyLeaveProps> = ({
   };
 
   const status = item.Status?.trim().toLowerCase();
-  const isEmployee = viewType === ViewType.myLeaves;
-  const isManager = viewType === ViewType.myApproval;
 
-  const showCancel = isEmployee && status === "pending";
-  const showApproveReject = isManager && status === "pending";
+const isEmployee = sourceView === ViewType.myLeaves;
+const isManager = sourceView === ViewType.myApproval;
 
+// 🔥 logged-in user
+const loggedInUser =
+  context.pageContext.user.displayName?.trim().toLowerCase();
+
+// 🔥 self approval check (employee == manager)
+const isSelfApproval =
+  item.EmployeeName?.trim().toLowerCase() === loggedInUser &&
+  item.Manager?.Title?.trim().toLowerCase() === loggedInUser;
+
+// ✅ Button rules
+const showCancel =
+  status === "pending" && isEmployee && !isSelfApproval;
+
+const showApproveReject =
+  status === "pending" && (isManager || isSelfApproval);
   return (
     <div className="container-fluid mt-3 px-2">
       <div className="card shadow-sm border-0 rounded-3">

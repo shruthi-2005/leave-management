@@ -35,25 +35,28 @@ export default class LeaveRequestsWebPart extends BaseClientSideWebPart<ILeaveRe
         break;
 
       case ViewType.apply:
-        if (this.selectedItem) {
-          // Manager clicked a request → view details
-          element = React.createElement(ApplyLeave, {
-            context: this.context,
-            item: this.selectedItem,
-            viewType: this.currentView,
-            onBack: () => {
-              this.selectedItem = null;
-              this.currentView = ViewType.myApproval;
-              this.renderComponent();
-            },
-            spHttpClient: this.context.spHttpClient,
-            siteUrl: this.context.pageContext.web.absoluteUrl,
-            onViewChange: (view: ViewType) => {
-              this.currentView = view;
-              this.renderComponent();
-            },
-            
-          });
+  if (this.selectedItem) {
+    element = React.createElement(ApplyLeave, {
+      context: this.context,
+      item: this.selectedItem,
+      viewType: this.currentView,
+
+      // ✅ ADD THIS LINE (VERY IMPORTANT)
+      sourceView: ViewType.myApproval, 
+
+      onBack: () => {
+        this.selectedItem = null;
+        this.currentView = ViewType.myApproval;
+        this.renderComponent();
+      },
+      spHttpClient: this.context.spHttpClient,
+      siteUrl: this.context.pageContext.web.absoluteUrl,
+      onViewChange: (view: ViewType) => {
+        this.currentView = view;
+        this.renderComponent();
+      },
+    });
+
         } else {
           // Normal user applying for leave
           element = React.createElement(Leaves, {

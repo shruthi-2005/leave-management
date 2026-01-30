@@ -34,16 +34,69 @@ const LeaveDashboard: React.FC<ILeaveDashboardProps> = ({
   const [leaveData, setLeaveData] = useState<ILeaveInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentView, setCurrentView] = useState<ViewType>(ViewType.home);
+  const [currentView, setCurrentView] = useState<ViewType | null>(null);
+  const [isDeeplinkLoading, setIsDeeplinkLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState<any>(null);
 
   // Manager filter states
   const [isManager, setIsManager] = useState(false);
   const [assignedEmployees, setAssignedEmployees] = useState<string[]>([]);
   const [selectedEmployee, setSelectedEmployee] = useState<string>(''); // Empty → means show manager’s own balance
-
+const [sourceView, setSourceView] = useState<ViewType>(ViewType.myLeaves);
   // 🔹 Hardcoded site URL for Teams
   const hardcodedSiteUrl = "https://elevix.sharepoint.com/sites/Trainingportal";
+useEffect(() => {
+  const teamsContext = context.sdks.microsoftTeams?.context;
+  if (!teamsContext) return;
+
+  if (teamsContext.subEntityId) {  
+    const itemId = Number(teamsContext.subEntityId);
+    console.log("TEAMS subEntityId:", itemId);
+
+    spHttpClient
+      .get(
+        `${hardcodedSiteUrl}/_api/web/lists/getbytitle('LeaveRequests')/items(${itemId})
+?$select=Id,EmployeeName,LeaveType,StartDate,EndDate,Days,Status,Reason,Manager/Title
+&$expand=Manager`,
+        SPHttpClient.configurations.v1
+      )
+      .then(res => res.json())
+      .then(data => {
+        console.log("DETAILS API DATA 👉", data);
+        setSelectedItem(data);
+
+        const status = data.Status?.trim().toLowerCase();
+
+        // 🔥 SELF / MANAGER CHECK (IMPORTANT)
+        const isSelfApproval =
+          data.EmployeeName?.trim().toLowerCase() ===
+          data.Manager?.Title?.trim().toLowerCase();
+
+        if (status === "pending" && (isManager || isSelfApproval)) {
+  setSourceView(ViewType.myApproval);
+  setCurrentView(ViewType.myApproval);
+} else {
+  setSourceView(ViewType.myLeaves);
+  setCurrentView(ViewType.myLeaves);
+}
+
+requestAnimationFrame(() => {
+  setCurrentView(ViewType.details);
+});
+
+        setIsDeeplinkLoading(false);
+      })
+      .catch(err => {
+        console.error("Fetch error", err);
+        setCurrentView(ViewType.myLeaves);
+        setIsDeeplinkLoading(false);
+      });
+
+  } else {
+    setCurrentView(ViewType.myLeaves);
+    setIsDeeplinkLoading(false);
+  }
+}, [context.sdks.microsoftTeams, isManager]);
 
   // 🔹 Fetch current logged-in user and assigned employees
   useEffect(() => {
@@ -122,9 +175,18 @@ const LeaveDashboard: React.FC<ILeaveDashboardProps> = ({
     }
   };
 
+// 🔹 Block UI until deeplink decision is made
+  if (isDeeplinkLoading || currentView === null) {
+    return (
+      <div className="container mt-4">
+        Loading...
+      </div>
+    );
+  }
+
   return (
     <div className="container mt-4" style={{ fontFamily: 'Segoe UI' }}>
-      {/* 🔹 Header */}
+      {/* existing JSX */}
       <div className="d-flex flex-wrap justify-content-between align-items-center mb-3">
         <h4 className="mb-2">Leave Management</h4>
         <button
@@ -136,32 +198,52 @@ const LeaveDashboard: React.FC<ILeaveDashboardProps> = ({
       </div>
 
       {/* 🔹 Tabs */}
-      <ul className="nav nav-tabs flex-wrap mb-4">
-        <li className="nav-item">
-          <button
-            className={`nav-link ${currentView === ViewType.home ? 'active' : ''}`}
-            onClick={() => handleNavClick(ViewType.home)}
-          >
-            My Information
-          </button>
-        </li>
-        <li className="nav-item">
-          <button
-            className={`nav-link ${currentView === ViewType.myLeaves ? 'active' : ''}`}
-            onClick={() => handleNavClick(ViewType.myLeaves)}
-          >
-            My Leaves
-          </button>
-        </li>
-        <li className="nav-item">
-          <button
-            className={`nav-link ${currentView === ViewType.myApproval ? 'active' : ''}`}
-            onClick={() => handleNavClick(ViewType.myApproval)}
-          >
-            My Approvals
-          </button>
-        </li>
-      </ul>
+<ul className="nav nav-tabs flex-wrap mb-4">
+  <li className="nav-item">
+    <button
+      className={`nav-link ${
+        currentView === ViewType.home ? 'active' : ''
+      }`}
+      onClick={() => handleNavClick(ViewType.home)}
+    >
+      My Information
+    </button>
+  </li>
+
+  <li className="nav-item">
+    <button
+      className={`nav-link ${
+        currentView === ViewType.details
+          ? sourceView === ViewType.myLeaves
+            ? 'active'
+            : ''
+          : currentView === ViewType.myLeaves
+          ? 'active'
+          : ''
+      }`}
+      onClick={() => handleNavClick(ViewType.myLeaves)}
+    >
+      My Leaves
+    </button>
+  </li>
+
+  <li className="nav-item">
+    <button
+      className={`nav-link ${
+        currentView === ViewType.details
+          ? sourceView === ViewType.myApproval
+            ? 'active'
+            : ''
+          : currentView === ViewType.myApproval
+          ? 'active'
+          : ''
+      }`}
+      onClick={() => handleNavClick(ViewType.myApproval)}
+    >
+      My Approvals
+    </button>
+  </li>
+</ul>
 
       {/* 🔹 My Information */}
       {currentView === ViewType.home && (
@@ -256,19 +338,20 @@ const LeaveDashboard: React.FC<ILeaveDashboardProps> = ({
 
       {/* 🔹 Leave Details */}
       {currentView === ViewType.details && selectedItem && (
-        <ApplyLeave
-          context={context}
-          spHttpClient={spHttpClient}
-          siteUrl={hardcodedSiteUrl}
-          item={selectedItem}
-          viewType={currentView}
-          onBack={() => {
-            setSelectedItem(null);
-            setCurrentView(ViewType.home);
-          }}
-          onViewChange={(view) => setCurrentView(view)}
-        />
-      )}
+  <ApplyLeave
+    context={context}
+    spHttpClient={spHttpClient}
+    siteUrl={hardcodedSiteUrl}
+    item={selectedItem}
+    viewType={currentView}
+    sourceView={sourceView} 
+    onBack={() => {
+      setSelectedItem(null);
+      setCurrentView(sourceView);
+    }}
+    onViewChange={(view) => setCurrentView(view)}
+  />
+)}
     </div>
   );
 };

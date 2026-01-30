@@ -150,6 +150,7 @@ const LeaveRequests: React.FC<ILeaveRequestsProps> = (props) => {
         siteUrl={hardcodedSiteUrl}
         onViewChange={props.onViewChange}
         viewType={props.viewType}
+        sourceView={props.viewType}
         showCancelButton={showCancelButton}
         showManagerActions={showManagerActions}
         onBack={() => { 
