@@ -37,7 +37,7 @@ const Leaves: React.FC<ILeavesProps> = ({ context, siteUrl, onViewChange }) => {
   const [reason, setReason] = useState<string>('');
   const [managerId, setManagerId] = useState<number | null>(null);
   const [managerEmail, setManagerEmail] = useState<string>('');
-
+const [notifyUsers, setNotifyUsers] = useState<number[]>([]);
   const [startHalfDay, setStartHalfDay] = useState<string>('');
   const [endHalfDay, setEndHalfDay] = useState<string>('');
 
@@ -156,72 +156,75 @@ const hasDateOverlap = (newStart: string, newEnd: string): boolean => {
 
 
   const calculateDays = (start: string, end: string, startHalf: string, endHalf: string) => {
-    setWarning('');
-    setDays(0);
+  setWarning('');
+  setDays(0);
 
-    if (!start || !end) return;
+  if (!start || !end) return;
 
-    const sDate = new Date(start);
-    const eDate = new Date(end);
+  const sDate = new Date(start);
+  const eDate = new Date(end);
 
-    if (eDate < sDate) {
-      setWarning('End date cannot be before start date.');
-      return;
-    }
-    if (hasDateOverlap(start, end)) {
-  setWarning('You already have a leave request in this date range.');
-  setSubmitDisabled(true);
-  return;
-}
-
-    let count = 0;
-    let currentDate = new Date(sDate);
-
-    while (currentDate <= eDate) {
-      if (!isWeekend(currentDate) && !isHoliday(currentDate)) {
-        count++;
-      }
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-
-    if (start === end) {
-  if (startHalf === 'Morning' || startHalf === 'Afternoon') {
-    count = 0.5;
+  if (eDate < sDate) {
+    setWarning('End date cannot be before start date.');
+    return;
   }
-} else {
-  if (startHalf === 'Morning' || startHalf === 'Afternoon') count -= 0.5;
-  if (endHalf === 'Morning' || endHalf === 'Afternoon') count -= 0.5;
-}
 
-    setDays(count);
+  if (hasDateOverlap(start, end)) {
+    setWarning('You already have a leave request in this date range.');
+    setSubmitDisabled(true);
+    return;
+  }
 
-    // ✅ Leave balance validation logic
-    if (leaveType && leaveBalances[leaveType] !== undefined) {
-      const balance = leaveBalances[leaveType];
-      setRemainingDays(balance);
+  let count = 0;
+  let currentDate = new Date(sDate);
 
-      if (count > balance) {
-        setWarning(`You only have ${balance} days remaining for ${leaveType}, but you selected ${count} days.`);
-      } else if (balance - count === 0) {
-        setWarning(`After this leave, your remaining balance for ${leaveType} will be 0 days.`);
-      } else {
-        setWarning('');
-      }
+  while (currentDate <= eDate) {
+    if (!isWeekend(currentDate) && !isHoliday(currentDate)) {
+      count++;
     }
-  };
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+
+  // ✅ Half Day Logic
+  if (start === end) {
+    if (startHalf === 'Morning' || startHalf === 'Afternoon') {
+      count = 0.5;
+    }
+  } else {
+    if (startHalf === 'Morning' || startHalf === 'Afternoon') count -= 0.5;
+    if (endHalf === 'Morning' || endHalf === 'Afternoon') count -= 0.5;
+  }
+
+  setDays(count);
+
+  // ✅ Correct Leave Balance Validation
+  if (leaveType && leaveBalances[leaveType] !== undefined) {
+    const balance = leaveBalances[leaveType];
+    setRemainingDays(balance);
+
+    // ❌ Block Only If Applied > Balance
+    if (count > balance) {
+      setWarning(`You only have ${balance} days remaining for ${leaveType}, but you selected ${count} days.`);
+    } else {
+      setWarning(''); // ✅ Allow even if balance becomes 0 after applying
+    }
+  }
+};
 
   const validateForm = () => {
-    const isValid =
-      leaveType !== '' &&
-      startDate !== '' &&
-      endDate !== '' &&
-      reason.trim() !== '' &&
-      managerId !== null &&
-      days > 0 &&
-      warning === '';
+  const balance = leaveBalances[leaveType] ?? 0;
 
-    setSubmitDisabled(!isValid);
-  };
+  const isValid =
+    leaveType !== '' &&
+    startDate !== '' &&
+    endDate !== '' &&
+    reason.trim() !== '' &&
+    managerId !== null &&
+    days > 0 &&
+    days <= balance;   // ⭐ MAIN FIX
+
+  setSubmitDisabled(!isValid);
+};
 
   useEffect(() => {
     calculateDays(startDate, endDate, startHalfDay, endHalfDay);
@@ -319,6 +322,7 @@ const hasDateOverlap = (newStart: string, newEnd: string): boolean => {
       Reason: reason,
       Status: 'Pending',
       ManagerId: Number(managerId),
+      NotifyUsersId:{results:notifyUsers},
       HalfDayLeave: startHalfDay !== '' || endHalfDay !== '',
       HalfDayLeaveStart: startHalfDay || '',
       HalfDayLeaveEnd: endHalfDay || ''
@@ -714,7 +718,34 @@ const hasDateOverlap = (newStart: string, newEnd: string): boolean => {
               />
             </div>
           </div>
+<div className="col-12">
+  <label className="form-label">Notify Users</label>
+  <div className="form-control p-0">
+    <PeoplePicker
+      context={PeoplePickerContext}
+      titleText=""
+      personSelectionLimit={10}   // multiple
+      ensureUser={true}
+      principalTypes={[PrincipalType.User]}
+      resolveDelay={200}
+      onChange={async (items: any[]) => {
+        const ids: number[] = [];
 
+        for (const user of items) {
+          if (user.secondaryText) {
+            const id = await getUserIdFromEmail(user.secondaryText);
+            if (id) ids.push(id);
+          } else if (user.loginName) {
+            const id = await getUserIdFromLoginName(user.loginName);
+            if (id) ids.push(id);
+          }
+        }
+
+        setNotifyUsers(ids);
+      }}
+    />
+  </div>
+</div>
         </div>
 
         {/* 🔘 Buttons */}

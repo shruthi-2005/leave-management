@@ -34,7 +34,8 @@ const LeaveDashboard: React.FC<ILeaveDashboardProps> = ({
   const [leaveData, setLeaveData] = useState<ILeaveInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentView, setCurrentView] = useState<ViewType | null>(null);
+  const [currentView, setCurrentView] = useState<ViewType>(ViewType.home);
+
   const [isDeeplinkLoading, setIsDeeplinkLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState<any>(null);
 
@@ -47,55 +48,56 @@ const [sourceView, setSourceView] = useState<ViewType>(ViewType.myLeaves);
   const hardcodedSiteUrl = "https://elevix.sharepoint.com/sites/Trainingportal";
 useEffect(() => {
   const teamsContext = context.sdks.microsoftTeams?.context;
-  if (!teamsContext) return;
 
-  if (teamsContext.subEntityId) {  
-    const itemId = Number(teamsContext.subEntityId);
-    console.log("TEAMS subEntityId:", itemId);
+  // ✅ CASE 1: SharePoint WebPart (NO Teams at all)
+  if (!teamsContext) {
+    setCurrentView(ViewType.home);
+    setIsDeeplinkLoading(false);
+    return;
+  }
 
-    spHttpClient
-      .get(
-        `${hardcodedSiteUrl}/_api/web/lists/getbytitle('LeaveRequests')/items(${itemId})
+  // ✅ CASE 2: Teams open WITHOUT deeplink
+  if (!teamsContext.subEntityId) {
+    setCurrentView(ViewType.home);
+    setIsDeeplinkLoading(false);
+    return;
+  }
+
+  // 🔥 CASE 3: Teams DEEPLINK
+  const itemId = Number(teamsContext.subEntityId);
+  console.log("TEAMS subEntityId:", itemId);
+
+  spHttpClient
+    .get(
+      `${hardcodedSiteUrl}/_api/web/lists/getbytitle('LeaveRequests')/items(${itemId})
 ?$select=Id,EmployeeName,LeaveType,StartDate,EndDate,Days,Status,Reason,Manager/Title
 &$expand=Manager`,
-        SPHttpClient.configurations.v1
-      )
-      .then(res => res.json())
-      .then(data => {
-        console.log("DETAILS API DATA 👉", data);
-        setSelectedItem(data);
+      SPHttpClient.configurations.v1
+    )
+    .then(res => res.json())
+    .then(data => {
+      setSelectedItem(data);
 
-        const status = data.Status?.trim().toLowerCase();
+      const status = data.Status?.trim().toLowerCase();
+      const isSelfApproval =
+        data.EmployeeName?.trim().toLowerCase() ===
+        data.Manager?.Title?.trim().toLowerCase();
 
-        // 🔥 SELF / MANAGER CHECK (IMPORTANT)
-        const isSelfApproval =
-          data.EmployeeName?.trim().toLowerCase() ===
-          data.Manager?.Title?.trim().toLowerCase();
+      setSourceView(
+        status === "pending" && (isManager || isSelfApproval)
+          ? ViewType.myApproval
+          : ViewType.myLeaves
+      );
 
-        if (status === "pending" && (isManager || isSelfApproval)) {
-  setSourceView(ViewType.myApproval);
-  setCurrentView(ViewType.myApproval);
-} else {
-  setSourceView(ViewType.myLeaves);
-  setCurrentView(ViewType.myLeaves);
-}
+      setCurrentView(ViewType.details);
+      setIsDeeplinkLoading(false);
+    })
+    .catch(err => {
+      console.error("Fetch error", err);
+      setCurrentView(ViewType.home);
+      setIsDeeplinkLoading(false);
+    });
 
-requestAnimationFrame(() => {
-  setCurrentView(ViewType.details);
-});
-
-        setIsDeeplinkLoading(false);
-      })
-      .catch(err => {
-        console.error("Fetch error", err);
-        setCurrentView(ViewType.myLeaves);
-        setIsDeeplinkLoading(false);
-      });
-
-  } else {
-    setCurrentView(ViewType.myLeaves);
-    setIsDeeplinkLoading(false);
-  }
 }, [context.sdks.microsoftTeams, isManager]);
 
   // 🔹 Fetch current logged-in user and assigned employees
